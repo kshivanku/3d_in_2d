@@ -1,16 +1,17 @@
 var playerSize = 25;
 var trigger = false;
 var playerSpeed = 15;
-var barrierSpeed = 10;
-var barrierMaxBreath = 500;
+var barrierSpeed = 5;
+var barrierMaxBreath = 50;
+var min_dist = 250;
+var max_dist = 1000;
 
 // all the coordinates for the player
 var tx1, tx2, ty, sy1, sy2, sx;
 
 var tplayer;
 var splayer;
-var old_barrier;
-var new_barrier;
+var barrier = [];
 
 function setup() {
   createCanvas(1040, 520);
@@ -24,7 +25,7 @@ function setup() {
   sx = playerSize + width / 2;
   tplayer = new Player();
   splayer = new Player();
-  new_barrier = new Barrier();
+  barrier[0] = new Barrier();
 } //SETUP ENDS
 
 function draw() {
@@ -35,10 +36,31 @@ function draw() {
   }
   tplayer.tdisplay();
   splayer.sdisplay();
-  new_barrier.display();
-  new_barrier.tmove();
-  new_barrier.smove();
+  
+  for (i=0 ; i<barrier.length; i++){
+    barrier[i].display();
+    barrier[i].tmove();
+    barrier[i].smove();
+  }
+  var oldestBarrier = barrier[0];
+  var latestBarrier = barrier[barrier.length - 1]
+  deletionCheck(oldestBarrier);
+  additionCheck(latestBarrier);
 } //DRAW ENDS
+
+function deletionCheck(old){
+  if(old.typos > height){
+    barrier.slice(1);
+  }
+}
+
+function additionCheck(latest){
+  var distance = floor(random(min_dist, max_dist));
+  if (latest.typos >= distance){
+    new_barrier = new Barrier();
+    barrier.push(new_barrier); 
+  }
+}
 
 function Player() {
   //Top view
@@ -75,8 +97,8 @@ function Barrier() {
   this.breath = random(1, barrierMaxBreath);
   this.height = chooseBarrierHeight(this.length);
   this.txpos = chooseBarriertx(this.length);
-  this.typos = (-2) * this.breath ;
-  this.sxpos = width + ((1) * this.breath);
+  this.typos = (-2) * this.breath;
+  this.sxpos = width + (1) * this.breath;
   this.sypos = chooseBarriersy(this.height);
   this.display = function() {
     rect(this.txpos, this.typos , this.length, this.breath);
@@ -150,9 +172,4 @@ function chooseBarriersy(h){
     }
     else { return 0; }
   }
-}
-
-function mousePressed(){
-  new_barrier = new Barrier();
- // console.log("Length = " + new_barrier.length + "; Breath = " + new_barrier.breath + "; Height = " + new_barrier.height);
 }
