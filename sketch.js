@@ -7,9 +7,8 @@ var barrierMaxBreath = 100;
 var min_dist = 250;
 var max_dist = 1000;
 var score = 0;
-
-var t_collision = false;
-var s_collision = false;
+var barrierColor = "#606060";
+var playerColor = "#E60909";
 
 // all the coordinates for the player
 var tx1, tx2, ty, sy1, sy2, sx;
@@ -17,10 +16,11 @@ var tplayer;
 var splayer;
 var barrier = [];
 
+var t_collision = false;
+var s_collision = false;
+
 function setup() {
-  createCanvas(1040, 520);
-  stroke(0);
-  fill(0);
+  createCanvas(window.innerHeight * 2, window.innerHeight);
   tx1 = width / 8;
   tx2 = 3 * width / 8;
   ty = height - playerSize;
@@ -34,28 +34,65 @@ function setup() {
 
 function draw() {
   background(220);
+  stroke(barrierColor);
   line((width - height), 0, (width - height), height);
+  
+  displayFirstBarrierAndPlayer();
 
-  tplayer.tdisplay();
-  splayer.sdisplay();
-  if (trigger || keyIsPressed) {
-    movePlayer();
+  for (i = 1; i < barrier.length; i++) {
+    fill(barrierColor);
+    noStroke();
+    barrier[i].display();
   }
 
   for (i = 0; i < barrier.length; i++) {
-    barrier[i].display();
     barrier[i].tmove();
     barrier[i].smove();
   }
 
-  var oldestBarrier = barrier[0];
-  var latestBarrier = barrier[barrier.length - 1];
+  if (trigger || keyIsPressed) {
+    movePlayer();
+  }
+
   deletionCheck(barrier);
   additionCheck(barrier);
-
   collisionCheck(barrier, tplayer, splayer);
 
 } //DRAW ENDS
+
+function displayFirstBarrierAndPlayer(){
+  noStroke();
+  if(barrier[0].id=="TOP_BACK"){
+    fill(playerColor);
+    tplayer.tdisplay();
+    fill(barrierColor);
+    barrier[0].display();
+    fill(playerColor);
+    splayer.sdisplay();
+  }
+  else if(barrier[0].id == "TOP_FRONT"){
+    fill(playerColor);
+    tplayer.tdisplay();
+    splayer.sdisplay(); 
+    fill(barrierColor);
+    barrier[0].display();
+  }
+  else if(barrier[0].id == "BOTTOM_FRONT"){
+    fill(playerColor);
+    splayer.sdisplay();
+    fill(barrierColor);
+    barrier[0].display();
+    fill(playerColor);
+    tplayer.tdisplay(); 
+  }
+  else if(barrier[0].id == "BOTTOM_BACK"){
+    fill(barrierColor); 
+    barrier[0].display();
+    fill(playerColor);
+    tplayer.tdisplay();
+    splayer.sdisplay();
+  }
+}
 
 
 function collisionCheck(b, t, s) {
@@ -88,7 +125,7 @@ function collisionCheck(b, t, s) {
 } //COLLISION CHECK ENDS
 
 function TopViewBarrierInXRange(b, t) {
-  var TopPlayerXbegin = t.txpos - playerSize / 4;
+  var TopPlayerXbegin = t.txpos - playerSize / 3;
   var TopPlayerXend = TopPlayerXbegin + playerSize;
   var xOnBarrier;
 
@@ -101,7 +138,7 @@ function TopViewBarrierInXRange(b, t) {
 }
 
 function TopViewBarrierInYRange(b, t) {
-  var TopPlayerYbegin = t.typos - playerSize / 4;
+  var TopPlayerYbegin = t.typos - playerSize / 3;
   var TopPlayerYend = TopPlayerYbegin + playerSize;
   var tyOnBarrier;
 
@@ -114,7 +151,7 @@ function TopViewBarrierInYRange(b, t) {
 }
 
 function SideViewBarrierInXRange(b, s) {
-  var SidePlayerXbegin = s.sxpos - playerSize / 4;
+  var SidePlayerXbegin = s.sxpos - playerSize / 3;
   var SidePlayerXend = SidePlayerXbegin + playerSize;
   var sxOnBarrier;
 
@@ -127,7 +164,7 @@ function SideViewBarrierInXRange(b, s) {
 }
 
 function SideViewBarrierInYRange(b, s) {
-  var SidePlayerYbegin = s.sypos - playerSize / 4;
+  var SidePlayerYbegin = s.sypos - playerSize / 3;
   var SidePlayerYend = SidePlayerYbegin + playerSize;
   var syOnBarrier;
 
@@ -193,6 +230,12 @@ function Barrier() {
   this.typos = (-2) * this.breath;
   this.sxpos = width + (1) * this.breath;
   this.sypos = chooseBarriersy(this.height);
+  
+  if(this.txpos==0 && this.sypos==0 ){ this.id = "TOP_BACK";}
+  if(this.txpos==width/4 && this.sypos==0 ){ this.id = "TOP_FRONT";}
+  if(this.txpos==0 && this.sypos==height/2 ){ this.id = "BOTTOM_BACK";}
+  if(this.txpos==width/4 && this.sypos==height/2 ){ this.id = "BOTTOM_FRONT";}
+
   this.display = function() {
     rect(this.txpos, this.typos, this.length, this.breath);
     rect(this.sxpos, this.sypos, this.breath, this.height);
