@@ -1,14 +1,18 @@
-var playerSize = 25;
+var playerSize = 40;
 var trigger = false;
-var playerSpeed = 15;
-var barrierSpeed = 5;
-var barrierMaxBreath = 50;
+var playerSpeed = 18;
+var barrierSpeed = 1;
+var barrierMinBreath = 1;
+var barrierMaxBreath = 100;
 var min_dist = 250;
 var max_dist = 1000;
+var score = 0;
+
+var t_collision = false;
+var s_collision = false;
 
 // all the coordinates for the player
 var tx1, tx2, ty, sy1, sy2, sx;
-
 var tplayer;
 var splayer;
 var barrier = [];
@@ -31,34 +35,123 @@ function setup() {
 function draw() {
   background(220);
   line((width - height), 0, (width - height), height);
-  if (trigger) {
-    keyPressed();
-  }
+
   tplayer.tdisplay();
   splayer.sdisplay();
-  
-  for (i=0 ; i<barrier.length; i++){
+  if (trigger || keyIsPressed) {
+    movePlayer();
+  }
+
+  for (i = 0; i < barrier.length; i++) {
     barrier[i].display();
     barrier[i].tmove();
     barrier[i].smove();
   }
+
   var oldestBarrier = barrier[0];
-  var latestBarrier = barrier[barrier.length - 1]
-  deletionCheck(oldestBarrier);
-  additionCheck(latestBarrier);
+  var latestBarrier = barrier[barrier.length - 1];
+  deletionCheck(barrier);
+  additionCheck(barrier);
+
+  collisionCheck(barrier, tplayer, splayer);
+
 } //DRAW ENDS
 
-function deletionCheck(old){
-  if(old.typos > height){
-    barrier.slice(1);
+
+function collisionCheck(b, t, s) {
+
+  // TOP VIEW
+
+  var topXCollision = TopViewBarrierInXRange(b, t);
+  var topYCollision = TopViewBarrierInYRange(b, t);
+
+  if (topXCollision && topYCollision) {
+    t_collision = true;
+  } else {
+    t_collision = false;
+  }
+
+  // SIDE VIEW
+
+  var sideXCollision = SideViewBarrierInXRange(b, s);
+  var sideYCollision = SideViewBarrierInYRange(b, s);
+
+  if (sideXCollision && sideYCollision) {
+    s_collision = true;
+  } else {
+    s_collision = false;
+  }
+
+  if (t_collision && s_collision) {
+    noLoop();
+  }
+} //COLLISION CHECK ENDS
+
+function TopViewBarrierInXRange(b, t) {
+  var TopPlayerXbegin = t.txpos - playerSize / 2;
+  var TopPlayerXend = TopPlayerXbegin + playerSize;
+  var xOnBarrier;
+
+  for (i = 0; i < b[0].length; i++) {
+    txOnBarrier = b[0].txpos + i;
+    if (txOnBarrier >= TopPlayerXbegin && txOnBarrier <= TopPlayerXend) {
+      return true;
+    }
   }
 }
 
-function additionCheck(latest){
+function TopViewBarrierInYRange(b, t) {
+  var TopPlayerYbegin = t.typos - playerSize / 2;
+  var TopPlayerYend = TopPlayerYbegin + playerSize;
+  var tyOnBarrier;
+
+  for (i = 0; i < b[0].breath; i++) {
+    tyOnBarrier = b[0].typos + i;
+    if (tyOnBarrier >= TopPlayerYbegin && tyOnBarrier <= TopPlayerYend) {
+      return true;
+    }
+  }
+}
+
+function SideViewBarrierInXRange(b, s) {
+  var SidePlayerXbegin = s.sxpos - playerSize / 2;
+  var SidePlayerXend = SidePlayerXbegin + playerSize;
+  var sxOnBarrier;
+
+  for (i = 0; i < b[0].breath; i++) {
+    sxOnBarrier = b[0].sxpos + i;
+    if (sxOnBarrier >= SidePlayerXbegin && sxOnBarrier <= SidePlayerXend) {
+      return true;
+    }
+  }
+}
+
+function SideViewBarrierInYRange(b, s) {
+  var SidePlayerYbegin = s.sypos - playerSize / 2;
+  var SidePlayerYend = SidePlayerYbegin + playerSize;
+  var syOnBarrier;
+
+  for (i = 0; i < b[0].height; i++) {
+    syOnBarrier = b[0].sypos + i;
+    if (syOnBarrier >= SidePlayerYbegin && syOnBarrier <= SidePlayerYend) {
+      return true;
+    }
+  }
+}
+
+function deletionCheck(b) {
+  if (b[0].typos > height) {
+    b.splice(0, 1);
+    score += 1;
+    console.log(score);
+  }
+}
+
+function additionCheck(b) {
   var distance = floor(random(min_dist, max_dist));
-  if (latest.typos >= distance){
+  if (b[b.length - 1].typos >= distance) {
     new_barrier = new Barrier();
-    barrier.push(new_barrier); 
+    b.push(new_barrier);
   }
 }
 
@@ -70,14 +163,14 @@ function Player() {
   this.sxpos = sx;
   this.sypos = sy1;
   this.tdisplay = function() {
-    ellipse(this.txpos, this.typos, playerSize, playerSize); 
+    ellipse(this.txpos, this.typos, playerSize, playerSize);
   };
-  this.sdisplay = function(){
+  this.sdisplay = function() {
     ellipse(this.sxpos, this.sypos, playerSize, playerSize);
   };
 } //PLAYER ENDS
 
-function keyPressed() {
+function movePlayer() {
   trigger = true;
   if (keyCode == 37 && tplayer.txpos >= tx1) {
     tplayer.txpos -= playerSpeed;
@@ -94,33 +187,31 @@ function keyPressed() {
 
 function Barrier() {
   this.length = chooseBarrierLength();
-  this.breath = random(1, barrierMaxBreath);
+  this.breath = random(barrierMinBreath, barrierMaxBreath);
   this.height = chooseBarrierHeight(this.length);
   this.txpos = chooseBarriertx(this.length);
   this.typos = (-2) * this.breath;
   this.sxpos = width + (1) * this.breath;
   this.sypos = chooseBarriersy(this.height);
   this.display = function() {
-    rect(this.txpos, this.typos , this.length, this.breath);
+    rect(this.txpos, this.typos, this.length, this.breath);
     rect(this.sxpos, this.sypos, this.breath, this.height);
   };
-  this.tmove = function(){
-    this.typos +=  barrierSpeed;
+  this.tmove = function() {
+    this.typos += barrierSpeed;
   };
-  this.smove = function(){
-    if (this.sxpos > (width/2)){
-      this.sxpos -=  barrierSpeed;
-    }
-    else{
-      this.sxpos = width/2;
-      if (this.breath >= 0){
+  this.smove = function() {
+    if (this.sxpos > (width / 2)) {
+      this.sxpos -= barrierSpeed;
+    } else {
+      this.sxpos = width / 2;
+      if (this.breath >= 0) {
         this.breath -= barrierSpeed;
-      }
-      else{
+      } else {
         this.sxpos = (-1) * width;
       }
-      } 
-    };
+    }
+  };
 } //BARRIERS ENDS
 
 function chooseBarrierLength() {
@@ -133,9 +224,7 @@ function chooseBarrierLength() {
 }
 
 function chooseBarrierHeight(l) {
-  console.log("Inside height chooser" + "\n");
   if (l == width / 2) {
-    console.log("length is width/2 is verified, sending " + height/2);
     return height / 2;
   } else {
     var i = floor(random(0, 2));
@@ -147,29 +236,29 @@ function chooseBarrierHeight(l) {
   }
 }
 
-function chooseBarriertx(l){
-  if (l == width/2){
+function chooseBarriertx(l) {
+  if (l == width / 2) {
     return 0;
-  }
-  else{
-    var i = floor(random(0,2));
-    if (i){
-      return width/4;
+  } else {
+    var i = floor(random(0, 2));
+    if (i) {
+      return width / 4;
+    } else {
+      return 0;
     }
-    else { return 0; }
   }
 }
 
 
-function chooseBarriersy(h){
-  if(h == height){
+function chooseBarriersy(h) {
+  if (h == height) {
     return 0;
-  }
-  else{
-    var i = floor(random(0,2));
-    if (i){
-      return height/2;
+  } else {
+    var i = floor(random(0, 2));
+    if (i) {
+      return height / 2;
+    } else {
+      return 0;
     }
-    else { return 0; }
   }
 }
