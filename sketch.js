@@ -1,7 +1,7 @@
 var playerSize = 40;
 var trigger = false;
 var playerSpeed = 18;
-var barrierSpeed = 1;
+var barrierSpeed = 10;
 var barrierMinBreath = 1;
 var barrierMaxBreath = 100;
 var min_dist = 250;
@@ -88,7 +88,7 @@ function collisionCheck(b, t, s) {
 } //COLLISION CHECK ENDS
 
 function TopViewBarrierInXRange(b, t) {
-  var TopPlayerXbegin = t.txpos - playerSize / 2;
+  var TopPlayerXbegin = t.txpos - playerSize / 4;
   var TopPlayerXend = TopPlayerXbegin + playerSize;
   var xOnBarrier;
 
@@ -101,7 +101,7 @@ function TopViewBarrierInXRange(b, t) {
 }
 
 function TopViewBarrierInYRange(b, t) {
-  var TopPlayerYbegin = t.typos - playerSize / 2;
+  var TopPlayerYbegin = t.typos - playerSize / 4;
   var TopPlayerYend = TopPlayerYbegin + playerSize;
   var tyOnBarrier;
 
@@ -114,7 +114,7 @@ function TopViewBarrierInYRange(b, t) {
 }
 
 function SideViewBarrierInXRange(b, s) {
-  var SidePlayerXbegin = s.sxpos - playerSize / 2;
+  var SidePlayerXbegin = s.sxpos - playerSize / 4;
   var SidePlayerXend = SidePlayerXbegin + playerSize;
   var sxOnBarrier;
 
@@ -127,7 +127,7 @@ function SideViewBarrierInXRange(b, s) {
 }
 
 function SideViewBarrierInYRange(b, s) {
-  var SidePlayerYbegin = s.sypos - playerSize / 2;
+  var SidePlayerYbegin = s.sypos - playerSize / 4;
   var SidePlayerYend = SidePlayerYbegin + playerSize;
   var syOnBarrier;
 
