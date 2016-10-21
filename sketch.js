@@ -2,7 +2,7 @@ var playerSize = 25;
 var trigger = false;
 var playerSpeed = 15;
 var barrierSpeed = 10;
-var barrierMaxBreath = 100;
+var barrierMaxBreath = 500;
 
 // all the coordinates for the player
 var tx1, tx2, ty, sy1, sy2, sx;
@@ -52,7 +52,7 @@ function Player() {
   };
   this.sdisplay = function(){
     ellipse(this.sxpos, this.sypos, playerSize, playerSize);
-  }
+  };
 } //PLAYER ENDS
 
 function keyPressed() {
@@ -75,8 +75,8 @@ function Barrier() {
   this.breath = random(1, barrierMaxBreath);
   this.height = chooseBarrierHeight(this.length);
   this.txpos = chooseBarriertx(this.length);
-  this.typos = (-1.1) * this.breath ;
-  this.sxpos = width + ((1.1) * this.breath);
+  this.typos = (-2) * this.breath ;
+  this.sxpos = width + ((1) * this.breath);
   this.sypos = chooseBarriersy(this.height);
   this.display = function() {
     rect(this.txpos, this.typos , this.length, this.breath);
@@ -86,13 +86,19 @@ function Barrier() {
     this.typos +=  barrierSpeed;
   };
   this.smove = function(){
-    if (this.sxpos >= (width/2)){
+    if (this.sxpos > (width/2)){
       this.sxpos -=  barrierSpeed;
     }
     else{
-      this.sxpos = (-1) * width;
-    }
-  };
+      this.sxpos = width/2;
+      if (this.breath >= 0){
+        this.breath -= barrierSpeed;
+      }
+      else{
+        this.sxpos = (-1) * width;
+      }
+      } 
+    };
 } //BARRIERS ENDS
 
 function chooseBarrierLength() {
