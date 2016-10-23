@@ -9,6 +9,8 @@ var max_dist = 1000;
 var score = 0;
 var barrierColor = "#606060";
 var playerColor = "#E60909";
+var shadowColor;
+var shadowOffset = 6;
 
 // all the coordinates for the player
 var tx1, tx2, ty, sy1, sy2, sx;
@@ -18,6 +20,9 @@ var barrier = [];
 
 var t_collision = false;
 var s_collision = false;
+
+var car_top;
+var car_side;
 
 function setup() {
   createCanvas(window.innerHeight * 2, window.innerHeight);
@@ -30,6 +35,12 @@ function setup() {
   tplayer = new Player();
   splayer = new Player();
   barrier[0] = new Barrier();
+  shadowColor = color(0,0,0,100);
+
+  // car_top = createImg("car_images/car_top.png"); 
+  // car_top.hide();
+  // car_side = createImg("car_images/car_side.png"); 
+  // car_side.hide();
 } //SETUP ENDS
 
 function draw() {
@@ -38,10 +49,7 @@ function draw() {
   line((width - height), 0, (width - height), height);
   
   displayFirstBarrierAndPlayer();
-
   for (i = 1; i < barrier.length; i++) {
-    fill(barrierColor);
-    noStroke();
     barrier[i].display();
   }
 
@@ -49,7 +57,6 @@ function draw() {
     barrier[i].tmove();
     barrier[i].smove();
   }
-
   if (trigger || keyIsPressed) {
     movePlayer();
   }
@@ -63,32 +70,22 @@ function draw() {
 function displayFirstBarrierAndPlayer(){
   noStroke();
   if(barrier[0].id=="TOP_BACK"){
-    fill(playerColor);
     tplayer.tdisplay();
-    fill(barrierColor);
     barrier[0].display();
-    fill(playerColor);
     splayer.sdisplay();
   }
   else if(barrier[0].id == "TOP_FRONT"){
-    fill(playerColor);
     tplayer.tdisplay();
     splayer.sdisplay(); 
-    fill(barrierColor);
     barrier[0].display();
   }
   else if(barrier[0].id == "BOTTOM_FRONT"){
-    fill(playerColor);
     splayer.sdisplay();
-    fill(barrierColor);
     barrier[0].display();
-    fill(playerColor);
     tplayer.tdisplay(); 
   }
   else if(barrier[0].id == "BOTTOM_BACK"){
-    fill(barrierColor); 
     barrier[0].display();
-    fill(playerColor);
     tplayer.tdisplay();
     splayer.sdisplay();
   }
@@ -125,7 +122,7 @@ function collisionCheck(b, t, s) {
 } //COLLISION CHECK ENDS
 
 function TopViewBarrierInXRange(b, t) {
-  var TopPlayerXbegin = t.txpos - playerSize / 3;
+  var TopPlayerXbegin = t.txpos - playerSize / 4;
   var TopPlayerXend = TopPlayerXbegin + playerSize;
   var xOnBarrier;
 
@@ -138,7 +135,7 @@ function TopViewBarrierInXRange(b, t) {
 }
 
 function TopViewBarrierInYRange(b, t) {
-  var TopPlayerYbegin = t.typos - playerSize / 3;
+  var TopPlayerYbegin = t.typos - playerSize / 4;
   var TopPlayerYend = TopPlayerYbegin + playerSize;
   var tyOnBarrier;
 
@@ -151,7 +148,7 @@ function TopViewBarrierInYRange(b, t) {
 }
 
 function SideViewBarrierInXRange(b, s) {
-  var SidePlayerXbegin = s.sxpos - playerSize / 3;
+  var SidePlayerXbegin = s.sxpos - playerSize / 4;
   var SidePlayerXend = SidePlayerXbegin + playerSize;
   var sxOnBarrier;
 
@@ -164,7 +161,7 @@ function SideViewBarrierInXRange(b, s) {
 }
 
 function SideViewBarrierInYRange(b, s) {
-  var SidePlayerYbegin = s.sypos - playerSize / 3;
+  var SidePlayerYbegin = s.sypos - playerSize / 4;
   var SidePlayerYend = SidePlayerYbegin + playerSize;
   var syOnBarrier;
 
@@ -180,7 +177,7 @@ function deletionCheck(b) {
   if (b[0].typos > height) {
     b.splice(0, 1);
     score += 1;
-    console.log(score);
+    //console.log(score);
   }
 }
 
@@ -200,9 +197,23 @@ function Player() {
   this.sxpos = sx;
   this.sypos = sy1;
   this.tdisplay = function() {
+    //image(car_top,this.txpos, this.typos, playerSize, playerSize);    
+    
+    if(splayer.sypos < sy1){
+      fill(shadowColor);
+      ellipse(this.txpos, this.typos+ (shadowOffset * sy2 / (splayer.sypos)), playerSize, playerSize);
+    }
+    fill(playerColor);
+    //console.log("outside if");
     ellipse(this.txpos, this.typos, playerSize, playerSize);
   };
   this.sdisplay = function() {
+    //image(car_side,this.sxpos, this.sypos, playerSize, playerSize);
+    if(tplayer.txpos > tx1){
+      fill(shadowColor);
+      ellipse(this.sxpos- (shadowOffset * (tplayer.txpos)/ tx2), this.sypos+ (shadowOffset * (tplayer.txpos)/tx2), playerSize, playerSize);
+    }
+    fill(playerColor);
     ellipse(this.sxpos, this.sypos, playerSize, playerSize);
   };
 } //PLAYER ENDS
@@ -237,7 +248,19 @@ function Barrier() {
   if(this.txpos==width/4 && this.sypos==height/2 ){ this.id = "BOTTOM_FRONT";}
 
   this.display = function() {
-    rect(this.txpos, this.typos, this.length, this.breath);
+    
+    if(this.id == "TOP_FRONT" || this.id == "TOP_BACK"){
+      fill(shadowColor);
+      rect(this.txpos, this.typos + shadowOffset, this.length, this.breath); 
+    }
+      fill(barrierColor);
+      rect(this.txpos, this.typos, this.length, this.breath);
+  
+    if(this.id == "BOTTOM_FRONT" || this.id == "BOTTOM_BACK"){
+      fill(shadowColor);
+      rect(this.sxpos - shadowOffset, this.sypos + shadowOffset, this.breath, this.height); 
+    }
+    fill(barrierColor);
     rect(this.sxpos, this.sypos, this.breath, this.height);
   };
   this.tmove = function() {
