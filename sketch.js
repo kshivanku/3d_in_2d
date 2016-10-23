@@ -1,7 +1,9 @@
 var playerSize = 40;
 var trigger = false;
 var playerSpeed = 18;
-var barrierSpeed = 10;
+var barrierSpeed = 5;
+var lastBarrierSpeed;
+//var baseSpeed=5;
 var barrierMinBreath = 1;
 var barrierMaxBreath = 100;
 var min_dist = 250;
@@ -9,6 +11,7 @@ var max_dist = 1000;
 var score = 0;
 var barrierColor = "#606060";
 var playerColor = "#E60909";
+var slow = false;
 
 // all the coordinates for the player
 var tx1, tx2, ty, sy1, sy2, sx;
@@ -45,6 +48,7 @@ function draw() {
     barrier[i].display();
   }
 
+  checkBarrierSpeed();
   for (i = 0; i < barrier.length; i++) {
     barrier[i].tmove();
     barrier[i].smove();
@@ -63,32 +67,22 @@ function draw() {
 function displayFirstBarrierAndPlayer(){
   noStroke();
   if(barrier[0].id=="TOP_BACK"){
-    fill(playerColor);
     tplayer.tdisplay();
-    fill(barrierColor);
     barrier[0].display();
-    fill(playerColor);
     splayer.sdisplay();
   }
   else if(barrier[0].id == "TOP_FRONT"){
-    fill(playerColor);
     tplayer.tdisplay();
     splayer.sdisplay(); 
-    fill(barrierColor);
     barrier[0].display();
   }
   else if(barrier[0].id == "BOTTOM_FRONT"){
-    fill(playerColor);
     splayer.sdisplay();
-    fill(barrierColor);
     barrier[0].display();
-    fill(playerColor);
     tplayer.tdisplay(); 
   }
   else if(barrier[0].id == "BOTTOM_BACK"){
-    fill(barrierColor); 
     barrier[0].display();
-    fill(playerColor);
     tplayer.tdisplay();
     splayer.sdisplay();
   }
@@ -200,9 +194,11 @@ function Player() {
   this.sxpos = sx;
   this.sypos = sy1;
   this.tdisplay = function() {
+    fill(playerColor);
     ellipse(this.txpos, this.typos, playerSize, playerSize);
   };
   this.sdisplay = function() {
+    fill(playerColor);
     ellipse(this.sxpos, this.sypos, playerSize, playerSize);
   };
 } //PLAYER ENDS
@@ -222,6 +218,33 @@ function movePlayer() {
   }
 }
 
+// Controlling barrier speed
+function keyPressed(){
+  if(keyCode == 32){
+    if(!slow){
+      lastBarrierSpeed = barrierSpeed;
+      barrierSpeed = 2;
+      slow = true;
+      score -= 10; 
+    }
+    else{
+      barrierSpeed = lastBarrierSpeed;
+      slow = false;
+    }
+  }
+}
+
+function checkBarrierSpeed(){
+  if(!slow && score > 10){
+    if(barrierSpeed < 12){
+      barrierSpeed = barrierSpeed + score * 0.0005;
+    }
+    else{
+      barrierSpeed = 12;
+    }
+  }
+}
+
 function Barrier() {
   this.length = chooseBarrierLength();
   this.breath = random(barrierMinBreath, barrierMaxBreath);
@@ -237,6 +260,7 @@ function Barrier() {
   if(this.txpos==width/4 && this.sypos==height/2 ){ this.id = "BOTTOM_FRONT";}
 
   this.display = function() {
+    fill(barrierColor);
     rect(this.txpos, this.typos, this.length, this.breath);
     rect(this.sxpos, this.sypos, this.breath, this.height);
   };
