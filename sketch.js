@@ -5,15 +5,15 @@ var baseBarrierSpeed=5;
 var maxBarrierSpeed = 14;
 var barrierSpeed = baseBarrierSpeed;
 var lastBarrierSpeed;
-var barrierMinBreath = 1;
-var barrierMaxBreath = 100;
+var barrierMinBreath = 100;
+var barrierMaxBreath = 600;
 var min_dist = 250;
 var max_dist = 1000;
 var score = 0;
 var practiceScore = 10;
 var topScore = 0;
-var barrierColor = "#606060";
-var playerColor = "#E60909";
+var barrierColor = "#FFFFFF";
+var playerColor = "#004EFD";
 var slow = false;
 
 // all the coordinates for the player
@@ -36,10 +36,11 @@ function setup() {
   tplayer = new Player();
   splayer = new Player();
   barrier[0] = new Barrier();
+
 } //SETUP ENDS
 
 function draw() {
-  background(220);
+  background("#2E3A54");
     
   displayFirstBarrierAndPlayer();
 
