@@ -1,14 +1,17 @@
 var playerSize = 40;
 var trigger = false;
 var playerSpeed = 18;
-var barrierSpeed = 5;
+var baseBarrierSpeed=5;
+var maxBarrierSpeed = 14;
+var barrierSpeed = baseBarrierSpeed;
 var lastBarrierSpeed;
-//var baseSpeed=5;
 var barrierMinBreath = 1;
 var barrierMaxBreath = 100;
 var min_dist = 250;
 var max_dist = 1000;
 var score = 0;
+var practiceScore = 10;
+var topScore = 0;
 var barrierColor = "#606060";
 var playerColor = "#E60909";
 var slow = false;
@@ -37,9 +40,7 @@ function setup() {
 
 function draw() {
   background(220);
-  stroke(barrierColor);
-  line((width - height), 0, (width - height), height);
-  
+    
   displayFirstBarrierAndPlayer();
 
   for (i = 1; i < barrier.length; i++) {
@@ -47,6 +48,8 @@ function draw() {
     noStroke();
     barrier[i].display();
   }
+
+  displayScore();
 
   checkBarrierSpeed();
   for (i = 0; i < barrier.length; i++) {
@@ -61,8 +64,19 @@ function draw() {
   deletionCheck(barrier);
   additionCheck(barrier);
   collisionCheck(barrier, tplayer, splayer);
-
 } //DRAW ENDS
+
+
+function displayScore(){
+  stroke(barrierColor);
+  line((width - height), 0, (width - height), height); 
+  fill(255);
+  rect(width/2 - 125, 0, 250, 50 );
+  fill(0);
+  textSize(16);
+  text("Score: " + score, width/2 - 105, 30);
+  text("Top Score: " + topScore, width/2 + 10, 30);
+}
 
 function displayFirstBarrierAndPlayer(){
   noStroke();
@@ -88,7 +102,7 @@ function displayFirstBarrierAndPlayer(){
   }
 }
 
-
+// CHECKING FOR COLLISION
 function collisionCheck(b, t, s) {
 
   // TOP VIEW
@@ -115,6 +129,9 @@ function collisionCheck(b, t, s) {
 
   if (t_collision && s_collision) {
     noLoop();
+    if (score> topScore){
+      topScore = score;
+    }
   }
 } //COLLISION CHECK ENDS
 
@@ -174,7 +191,6 @@ function deletionCheck(b) {
   if (b[0].typos > height) {
     b.splice(0, 1);
     score += 1;
-    console.log(score);
   }
 }
 
@@ -185,6 +201,14 @@ function additionCheck(b) {
     b.push(new_barrier);
   }
 }
+
+function mousePressed(){
+  barrier.splice(0,1);
+  score = 0;
+  barrierSpeed = baseBarrierSpeed;
+  loop();
+}
+
 
 function Player() {
   //Top view
@@ -235,12 +259,12 @@ function keyPressed(){
 }
 
 function checkBarrierSpeed(){
-  if(!slow && score > 10){
-    if(barrierSpeed < 12){
+  if(!slow && score > practiceScore){
+    if(barrierSpeed < maxBarrierSpeed){
       barrierSpeed = barrierSpeed + score * 0.0005;
     }
     else{
-      barrierSpeed = 12;
+      barrierSpeed = maxBarrierSpeed;
     }
   }
 }
