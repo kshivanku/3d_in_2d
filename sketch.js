@@ -1,19 +1,25 @@
-var playerSize = 40;
+var playerSize = 60;
 var trigger = false;
 var playerSpeed = 18;
 var baseBarrierSpeed=5;
-var maxBarrierSpeed = 14;
+var maxBarrierSpeed = 11;
 var barrierSpeed = baseBarrierSpeed;
 var lastBarrierSpeed;
-var barrierMinBreath = 100;
-var barrierMaxBreath = 600;
-var min_dist = 250;
-var max_dist = 1000;
+var barrierMinBreath = 1;
+var barrierMaxBreath = 400;
+var min_dist = 200;
+var max_dist = 500;
 var score = 0;
 var practiceScore = 10;
 var topScore = 0;
 var barrierColor = "#FFFFFF";
-var playerColor = "#004EFD";
+var barrierTopColor = "#C4D6FF";
+var barrierBottomColor = "#04192F";
+var playerColor = "#F5C8A1";
+var playerBottomColor = "#17130F";
+var playerTopColor = "#F5C8A1";
+var shadowColor;
+var shadowOffset = 8;
 var slow = false;
 
 // all the coordinates for the player
@@ -24,6 +30,14 @@ var barrier = [];
 
 var t_collision = false;
 var s_collision = false;
+
+// var superman_side;
+// var superman_top;
+// function preload(){
+//   superman_side = loadImage("Images/superman_side.png");
+//   superman_top = loadImage("Images/superman_top.png");
+// }
+
 
 function setup() {
   createCanvas(window.innerHeight * 2, window.innerHeight);
@@ -36,6 +50,14 @@ function setup() {
   tplayer = new Player();
   splayer = new Player();
   barrier[0] = new Barrier();
+
+  shadowColor = color(0,120);
+
+  // superman_top = createImg("Images/superman_top.png");
+  // superman_side = createImg("Images/superman_side.png");
+
+  // superman_side.hide();
+  // superman_top.hide();
 
 } //SETUP ENDS
 
@@ -207,6 +229,7 @@ function mousePressed(){
   barrier.splice(0,1);
   score = 0;
   barrierSpeed = baseBarrierSpeed;
+  if(!barrier[0]){barrier[0] = new Barrier();}
   loop();
 }
 
@@ -219,12 +242,43 @@ function Player() {
   this.sxpos = sx;
   this.sypos = sy1;
   this.tdisplay = function() {
-    fill(playerColor);
-    ellipse(this.txpos, this.typos, playerSize, playerSize);
+    if (splayer.sypos < height/2){
+      fill(shadowColor);
+      ellipse(this.txpos, this.typos+shadowOffset, playerSize, playerSize);
+      fill(playerTopColor);
+      ellipse(this.txpos, this.typos, playerSize, playerSize);
+    }
+    else{
+      fill(playerBottomColor);
+      ellipse(this.txpos, this.typos, playerSize/1.5, playerSize/1.5);
+    }
+    // image(superman_top, this.txpos, this.typos, playerSize, playerSize);
   };
   this.sdisplay = function() {
-    fill(playerColor);
-    ellipse(this.sxpos, this.sypos, playerSize, playerSize);
+    if (splayer.sypos < height/2){
+      if (tplayer.txpos < width/4){
+        fill(shadowColor);
+        ellipse(this.sxpos-shadowOffset, this.sypos+shadowOffset, playerSize/1.5, playerSize/1.5);
+        fill(playerTopColor);
+        ellipse(this.sxpos, this.sypos, playerSize/1.5, playerSize/1.5);
+      }
+      else{
+        fill(shadowColor);
+        ellipse(this.sxpos-shadowOffset, this.sypos+shadowOffset, playerSize, playerSize);
+        fill(playerTopColor);
+        ellipse(this.sxpos, this.sypos, playerSize, playerSize); 
+      }
+    }
+    else{
+      fill(playerBottomColor);
+      if (tplayer.txpos < width/4){
+        ellipse(this.sxpos, this.sypos, playerSize/1.5, playerSize/1.5);
+      }
+      else{
+        ellipse(this.sxpos, this.sypos, playerSize, playerSize); 
+      }
+    }
+    // image(superman_side, this.sxpos, this.sypos, playerSize, playerSize);
   };
 } //PLAYER ENDS
 
@@ -285,7 +339,13 @@ function Barrier() {
   if(this.txpos==width/4 && this.sypos==height/2 ){ this.id = "BOTTOM_FRONT";}
 
   this.display = function() {
-    fill(barrierColor);
+    
+    if (this.id == "TOP_BACK" || this.id == "TOP_FRONT"){
+      fill(barrierTopColor);
+    }
+    else {
+      fill(barrierBottomColor);
+    }
     rect(this.txpos, this.typos, this.length, this.breath);
     rect(this.sxpos, this.sypos, this.breath, this.height);
   };
