@@ -18,7 +18,8 @@ var barrierBottomColor = "#04192F";
 var shadowColor;
 var shadowOffset = 8;
 var slow = false;
-//var wobble = 
+
+var id = [""];
 
 // all the coordinates for the player
 var tx1, tx2, ty, sy1, sy2, sx;
@@ -310,18 +311,18 @@ function checkBarrierSpeed(){
 }
 
 function Barrier() {
-  this.length = chooseBarrierLength();
-  this.breath = random(barrierMinBreath, barrierMaxBreath);
-  this.height = chooseBarrierHeight(this.length);
-  this.txpos = chooseBarriertx(this.length);
-  this.typos = (-2) * this.breath;
-  this.sxpos = width + (1) * this.breath;
-  this.sypos = chooseBarriersy(this.height);
   
-  if(this.txpos==0 && this.sypos==0 ){ this.id = "TOP_BACK";}
-  if(this.txpos==width/4 && this.sypos==0 ){ this.id = "TOP_FRONT";}
-  if(this.txpos==0 && this.sypos==height/2 ){ this.id = "BOTTOM_BACK";}
-  if(this.txpos==width/4 && this.sypos==height/2 ){ this.id = "BOTTOM_FRONT";}
+  this.id = chooseBarrierId();
+
+  
+  this.length = 
+  this.breath = 
+  this.height = 
+  this.txpos = 
+  this.typos = 
+  this.sxpos = 
+  this.sypos = 
+  
 
   this.display = function() {
     
@@ -350,6 +351,11 @@ function Barrier() {
     }
   };
 } //BARRIERS ENDS
+
+function chooseBarrierId(){
+
+}
+
 
 function chooseBarrierLength() {
   var i = floor(random(0, 2));
