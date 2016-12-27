@@ -1,27 +1,29 @@
-var playerSize = 80;
-var trigger = false;
-var playerSpeed = 18;
-var baseBarrierSpeed=5;
-var maxBarrierSpeed = 11;
+var playerSize = 60;
+var baseBarrierSpeed = 2;
+var maxBarrierSpeed = 20;
 var barrierSpeed = baseBarrierSpeed;
 var lastBarrierSpeed;
 var barrierMinBreath = 1;
 var barrierMaxBreath = 400;
 var min_dist = 200;
-var max_dist = 500;
+var max_dist = 300;
 var score = 0;
-var practiceScore = 10;
-var topScore = 0;
+var practiceScore = 1;
+var topScore;
 var barrierColor = "#FFFFFF";
-var barrierTopColor = "#C4D6FF";
-var barrierBottomColor = "#04192F";
+var barrierTopColor = "#FFFFFF";
+var barrierBottomColor = "#FFFFFF";
+var playerColor = "#191C21";
+var playerBottomColor = "#191C21";
+var playerTopColor = "#191C21";
 var shadowColor;
-var shadowOffset = 8;
+var shadowOffset = 10;
 var slow = false;
-//var wobble = 
+var speedChanged = false;
+var deducted = false;
 
-// all the coordinates for the player
-var tx1, tx2, ty, sy1, sy2, sx;
+// all the coordinates for the player tx1,sy1,
+var tx, ty, sy, sx, rawtx1, rawsy1, restart;
 var tplayer;
 var splayer;
 var barrier = [];
@@ -29,45 +31,60 @@ var barrier = [];
 var t_collision = false;
 var s_collision = false;
 
-var superman_side, superman_side_shadow;
-var superman_top, superman_top_shadow;
+var serial; // variable to hold an instance of the serialport library
+var portName = '/dev/cu.usbmodem1411'; // fill in your serial port name here
+var amt = 0.05;
+var smoothedValue = 0;
+var outByte = 'x';
+
+var index;
+var c1,c2,backgroundColor;
+
+var songOut;
 
 function preload(){
-  superman_side = loadImage("Images/superman_side.png");
-  superman_top = loadImage("Images/superman_top.png");
-  superman_side_shadow = loadImage("Images/superman_side_shadow.png");
-  superman_top_shadow = loadImage("Images/superman_top_shadow.png");
+	songOut = loadSound("SciFi-06.mp3");
 }
-
 
 function setup() {
   createCanvas(window.innerHeight * 2, window.innerHeight);
-  tx1 = width / 8;
-  tx2 = 3 * width / 8;
-  ty = height - playerSize;
-  sy1 = 3 * height / 4;
-  sy2 = height / 4;
-  sx = playerSize + width / 2;
-  tplayer = new Player();
-  splayer = new Player();
   barrier[0] = new Barrier();
-
-  shadowColor = color(0,120);
-
+  shadowColor = color(0, 120);
+  tx = width / 8;
+  sy = 3 * height / 4;
+  smooth(); // antialias drawing lines
+  serial = new p5.SerialPort(); // make a new instance of the serialport library
+  serial.on('open', portOpen);
+  serial.on('data', serialEvent); // callback for when new data arrives
+  serial.open(portName);
+  // pixelDensity(1);
+  c1 = color('#7655EA');
+  c2 = color('#1DA5E1');
+  backgroundColor = color('#F4EFDC');
 } //SETUP ENDS
 
 function draw() {
-  background("#2E3A54");
-    
-  displayFirstBarrierAndPlayer();
+  background(backgroundColor);  
+  
+  for (var i = 0; i <= height; i++) {
+    var inter = map(i, 0, height, 0, 1);
+    var c = lerpColor(c1, c2, inter);
+    stroke(c);
+    line(width/2, i, width, i);
+  }
+  
+  ty = height - playerSize;
+  sx = playerSize + width / 2;
+  tplayer = new Player();
+  splayer = new Player();
 
+
+  displayFirstBarrierAndPlayer();
   for (i = 1; i < barrier.length; i++) {
     fill(barrierColor);
     noStroke();
     barrier[i].display();
   }
-
-  displayScore();
 
   checkBarrierSpeed();
   for (i = 0; i < barrier.length; i++) {
@@ -75,45 +92,55 @@ function draw() {
     barrier[i].smove();
   }
 
-  if (trigger || keyIsPressed) {
-    movePlayer();
-  }
-
   deletionCheck(barrier);
   additionCheck(barrier);
   collisionCheck(barrier, tplayer, splayer);
+  
+  displayScore();
 } //DRAW ENDS
 
 
-function displayScore(){
+function displayScore() {
   stroke(barrierColor);
-  line((width - height), 0, (width - height), height); 
-  fill(255);
-  rect(width/2 - 125, 0, 250, 50 );
+  line((width - height), 0, (width - height), height);
+  fill(255, 220);
+  noStroke();
+  rectMode(CENTER);
+  rect(width / 2, 25, 250, 50);
   fill(0);
   textSize(16);
-  text("Score: " + score, width/2 - 105, 30);
-  text("Top Score: " + topScore, width/2 + 10, 30);
+  textAlign(CENTER);
+  textStyle(BOLD);
+  if(topScore){
+  	text("Score: " + score + "    Best: " + topScore, width / 2, 30);
+  }
+  else{
+  	text("Score: " + score, width / 2, 30);
+  }
+  
+  textSize(12);
+  textStyle(NORMAL);
+  text("TOP VIEW", 80, 30);
+  text("SIDE VIEW", width - 90, 30);
+  
+  rectMode(CORNER);
 }
 
-function displayFirstBarrierAndPlayer(){
+function displayFirstBarrierAndPlayer() {
   noStroke();
-  if(barrier[0].id=="TOP_BACK"){
+  if (barrier[0].id == "TOP_BACK") {
     tplayer.tdisplay();
     barrier[0].display();
     splayer.sdisplay();
-  }
-  else if(barrier[0].id == "TOP_FRONT"){
+  } else if (barrier[0].id == "TOP_FRONT") {
     tplayer.tdisplay();
-    splayer.sdisplay(); 
-    barrier[0].display();
-  }
-  else if(barrier[0].id == "BOTTOM_FRONT"){
     splayer.sdisplay();
     barrier[0].display();
-    tplayer.tdisplay(); 
-  }
-  else if(barrier[0].id == "BOTTOM_BACK"){
+  } else if (barrier[0].id == "BOTTOM_FRONT") {
+    splayer.sdisplay();
+    barrier[0].display();
+    tplayer.tdisplay();
+  } else if (barrier[0].id == "BOTTOM_BACK") {
     barrier[0].display();
     tplayer.tdisplay();
     splayer.sdisplay();
@@ -146,15 +173,46 @@ function collisionCheck(b, t, s) {
   }
 
   if (t_collision && s_collision) {
+    outByte = "H";
+    turnEverythingRed();
+    songOut.play();
     noLoop();
-    if (score> topScore){
+    if (score > topScore || !topScore) {
       topScore = score;
     }
   }
 } //COLLISION CHECK ENDS
 
+function turnEverythingRed(){
+	c1 = color('#931111');
+  c2 = color('#600000');
+  barrierColor = "#BF1616";
+	barrierTopColor = "#BF1616";
+	barrierBottomColor = "#BF1616";
+	playerColor = "#FFFFFF";
+	playerBottomColor = "#FFFFFF";
+	playerTopColor = "#FFFFFF";
+
+  background('#790000');
+  
+  for (var i = 0; i <= height; i++) {
+    var inter = map(i, 0, height, 0, 1);
+    var c = lerpColor(c1, c2, inter);
+    stroke(c);
+    line(width/2, i, width, i);
+  }
+  
+  displayFirstBarrierAndPlayer();
+  for (i = 1; i < barrier.length; i++) {
+    fill(barrierColor);
+    noStroke();
+    barrier[i].display();
+  }
+}
+
+
 function TopViewBarrierInXRange(b, t) {
-  var TopPlayerXbegin = t.txpos - playerSize / 3;
+  var TopPlayerXbegin = t.txpos - playerSize / 2;
   var TopPlayerXend = TopPlayerXbegin + playerSize;
   var xOnBarrier;
 
@@ -167,7 +225,7 @@ function TopViewBarrierInXRange(b, t) {
 }
 
 function TopViewBarrierInYRange(b, t) {
-  var TopPlayerYbegin = t.typos - playerSize / 3;
+  var TopPlayerYbegin = t.typos - playerSize / 2;
   var TopPlayerYend = TopPlayerYbegin + playerSize;
   var tyOnBarrier;
 
@@ -180,7 +238,7 @@ function TopViewBarrierInYRange(b, t) {
 }
 
 function SideViewBarrierInXRange(b, s) {
-  var SidePlayerXbegin = s.sxpos - playerSize / 3;
+  var SidePlayerXbegin = s.sxpos - playerSize / 2;
   var SidePlayerXend = SidePlayerXbegin + playerSize;
   var sxOnBarrier;
 
@@ -193,7 +251,7 @@ function SideViewBarrierInXRange(b, s) {
 }
 
 function SideViewBarrierInYRange(b, s) {
-  var SidePlayerYbegin = s.sypos - playerSize / 3;
+  var SidePlayerYbegin = s.sypos - playerSize / 2;
   var SidePlayerYend = SidePlayerYbegin + playerSize;
   var syOnBarrier;
 
@@ -208,7 +266,6 @@ function SideViewBarrierInYRange(b, s) {
 function deletionCheck(b) {
   if (b[0].typos > height) {
     b.splice(0, 1);
-    score += 1;
   }
 }
 
@@ -220,94 +277,84 @@ function additionCheck(b) {
   }
 }
 
-function mousePressed(){
-  barrier.splice(0,1);
+function checkBarrierSpeed() {
+  if (slow) {
+  	barrierSpeed = baseBarrierSpeed;
+    score -= 2;
+  } else {
+    if(barrierSpeed < maxBarrierSpeed){
+	  	barrierSpeed = barrierSpeed + 0.1;
+    }
+    else{
+    	barrierSpeed = maxBarrierSpeed;
+    }
+    score += 1;
+  }
+}
+
+function restartGame() {
+  barrier.splice(0, 1);
   score = 0;
   barrierSpeed = baseBarrierSpeed;
-  if(!barrier[0]){barrier[0] = new Barrier();}
+  if (!barrier[0]) {
+    barrier[0] = new Barrier();
+  }
+  resetColors();
   loop();
 }
 
+function resetColors(){
+	barrierColor = "#FFFFFF";
+	barrierTopColor = "#FFFFFF";
+	barrierBottomColor = "#FFFFFF";
+	playerColor = "#191C21";
+	playerBottomColor = "#191C21";
+	playerTopColor = "#191C21";
+  c1 = color('#7655EA');
+  c2 = color('#1DA5E1');
+  backgroundColor = color('#F4EFDC');
+}
 
 function Player() {
   //Top view
-  this.txpos = tx1;
+  this.txpos = tx;
   this.typos = ty;
   //Side view
   this.sxpos = sx;
-  this.sypos = sy1;
+  this.sypos = sy;
   this.tdisplay = function() {
-    if (splayer.sypos < height/2){
-      image(superman_top_shadow,this.txpos, this.typos+shadowOffset, playerSize, playerSize);
-      image(superman_top, this.txpos, this.typos, playerSize, playerSize);
-    }
-    else{
-      image(superman_top, this.txpos, this.typos, playerSize/1.5, playerSize/1.5);
+    
+    if (splayer.sypos < height / 2) {
+      fill(shadowColor);
+      ellipse(this.txpos, this.typos + shadowOffset, playerSize, playerSize);
+      fill(playerTopColor);
+      ellipse(this.txpos, this.typos, playerSize, playerSize);
+    } else {
+      fill(playerBottomColor);
+      ellipse(this.txpos, this.typos, playerSize / 1.5, playerSize / 1.5);
     }
   };
   this.sdisplay = function() {
-    if (splayer.sypos < height/2){
-      if (tplayer.txpos < width/4){
-        image(superman_side_shadow,this.sxpos-shadowOffset, this.sypos+shadowOffset, playerSize/1.5, playerSize/1.5);
-        image(superman_side, this.sxpos, this.sypos, playerSize/1.5, playerSize/1.5);
+    
+    if (splayer.sypos < height / 2) {
+      if (tplayer.txpos < width / 4) {
+        fill(playerTopColor);
+        ellipse(this.sxpos, this.sypos, playerSize / 1.5, playerSize / 1.5);
+      } else {
+        fill(playerTopColor);
+        ellipse(this.sxpos, this.sypos, playerSize, playerSize);
       }
-      else{
-        image(superman_side_shadow,this.sxpos-shadowOffset, this.sypos+shadowOffset, playerSize, playerSize);
-        image(superman_side, this.sxpos, this.sypos, playerSize, playerSize);
-      }
-    }
-    else{
-      if (tplayer.txpos < width/4){
-        image(superman_side, this.sxpos, this.sypos, playerSize/1.5, playerSize/1.5);
-      }
-      else{
-        image(superman_side, this.sxpos, this.sypos, playerSize, playerSize);
+    } else {
+      fill(playerBottomColor);
+      if (tplayer.txpos < width / 4) {
+        ellipse(this.sxpos, this.sypos, playerSize / 1.5, playerSize / 1.5);
+      } else {
+        ellipse(this.sxpos, this.sypos, playerSize, playerSize);
       }
     }
   };
 } //PLAYER ENDS
 
-function movePlayer() {
-  trigger = true;
-  if (keyCode == 37 && tplayer.txpos >= tx1) {
-    tplayer.txpos -= playerSpeed;
-  } else if (keyCode == 39 && tplayer.txpos <= tx2) {
-    tplayer.txpos += playerSpeed;
-  } else if (keyCode == 38 && splayer.sypos >= sy2) {
-    splayer.sypos -= playerSpeed;
-  } else if (keyCode == 40 && splayer.sypos <= sy1) {
-    splayer.sypos += playerSpeed;
-  } else {
-    trigger = false;
-  }
-}
-
-// Controlling barrier speed
-function keyPressed(){
-  if(keyCode == 32){
-    if(!slow){
-      lastBarrierSpeed = barrierSpeed;
-      barrierSpeed = 2;
-      slow = true;
-      score -= 10; 
-    }
-    else{
-      barrierSpeed = lastBarrierSpeed;
-      slow = false;
-    }
-  }
-}
-
-function checkBarrierSpeed(){
-  if(!slow && score > practiceScore){
-    if(barrierSpeed < maxBarrierSpeed){
-      barrierSpeed = barrierSpeed + score * 0.0005;
-    }
-    else{
-      barrierSpeed = maxBarrierSpeed;
-    }
-  }
-}
 
 function Barrier() {
   this.length = chooseBarrierLength();
@@ -317,18 +364,25 @@ function Barrier() {
   this.typos = (-2) * this.breath;
   this.sxpos = width + (1) * this.breath;
   this.sypos = chooseBarriersy(this.height);
-  
-  if(this.txpos==0 && this.sypos==0 ){ this.id = "TOP_BACK";}
-  if(this.txpos==width/4 && this.sypos==0 ){ this.id = "TOP_FRONT";}
-  if(this.txpos==0 && this.sypos==height/2 ){ this.id = "BOTTOM_BACK";}
-  if(this.txpos==width/4 && this.sypos==height/2 ){ this.id = "BOTTOM_FRONT";}
+
+  if (this.txpos === 0 && this.sypos === 0) {
+    this.id = "TOP_BACK";
+  }
+  if (this.txpos == width / 4 && this.sypos === 0) {
+    this.id = "TOP_FRONT";
+  }
+  if (this.txpos === 0 && this.sypos == height / 2) {
+    this.id = "BOTTOM_BACK";
+  }
+  if (this.txpos == width / 4 && this.sypos == height / 2) {
+    this.id = "BOTTOM_FRONT";
+  }
 
   this.display = function() {
-    
-    if (this.id == "TOP_BACK" || this.id == "TOP_FRONT"){
+
+    if (this.id == "TOP_BACK" || this.id == "TOP_FRONT") {
       fill(barrierTopColor);
-    }
-    else {
+    } else {
       fill(barrierBottomColor);
     }
     rect(this.txpos, this.typos, this.length, this.breath);
@@ -397,5 +451,64 @@ function chooseBarriersy(h) {
     } else {
       return 0;
     }
+  }
+}
+
+function printList(portList) {
+  for (var i = 0; i < portList.length; i++) {
+    // Display the list the console:
+    println(i + " " + portList[i]);
+  }
+}
+
+function serverConnected() {
+  println('connected to server.');
+}
+
+function portOpen() {
+  println('the serial port opened.');
+  serial.write(outByte);
+}
+
+function serialError(err) {
+  println('Something went wrong with the serial port. ' + err);
+}
+
+function portClose() {
+  println('The serial port closed.');
+}
+
+function serialEvent() {
+
+  // read a string from the serial port
+  // until you get carriage return and newline:
+  var inString = serial.readStringUntil('\r\n');
+  //check to see that there's actually a string there:
+  if (inString.length > 0) {
+    var sensors = split(inString, ',');
+    //split the string on the commas                      
+    rawtx1 = map(sensors[0], 250, 400, -5*width, 5*width);
+    rawsy1 = map(sensors[1], 250, 400, 5*height, -5*height);
+    tx = lerp(tx, rawtx1, amt);
+    sy = lerp(sy, rawsy1, amt);
+    
+    if(tx < width/8) {tx = width/8;}
+    if(tx > 3*width/8 - playerSize/2) {tx = 3*width/8 - playerSize/2;}
+    if(sy < height/4) {sy = height/4;}
+    if(sy > 3*height/4){sy = 3*height/4;}
+
+    if (sensors[3] == "1") {
+			slow = false; 			
+    }
+    else{
+    	slow = true;
+    }
+    
+    if (sensors[4] == "1") {
+      outByte = "L";
+      restartGame();
+    }
+
+    serial.write(outByte);
   }
 }
